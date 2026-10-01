@@ -11,6 +11,6 @@ public class GreetingService {
 
     public String greeting(String name) {
         int count = quack.incrementAndGet();
-        return "\nQuack " + name + "\n\nQuack time = " + count;
+        return "Quack " + name + "Quack time = " + count;
     }
 }
