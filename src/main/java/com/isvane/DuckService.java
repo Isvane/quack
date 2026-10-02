@@ -6,10 +6,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 @ApplicationScoped
 public class DuckService {
 
-    private AtomicInteger ducks = new AtomicInteger(100);
-    private AtomicInteger userDucks = new AtomicInteger(0);
+    private final AtomicInteger ducks = new AtomicInteger(100);
+    private final AtomicInteger userDucks = new AtomicInteger(0);
 
     public String buy(int quantity) {
+        if (quantity <= 0) {
+            return "Quantity must be greater than zero!";
+        }
+
         int currentStock;
         int nextStock;
 
@@ -27,6 +31,10 @@ public class DuckService {
     }
 
     public String sell(int quantity) {
+        if (quantity <= 0) {
+            return "Quantity must be greater than zero!";
+        }
+
         int currentInventory;
         int nextInventory;
 
