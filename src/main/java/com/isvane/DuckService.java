@@ -1,13 +1,23 @@
 package com.isvane;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class DuckService {
 
-    private final AtomicInteger ducks = new AtomicInteger(100);
+    @ConfigProperty(name = "ducks.number")
+    int ducksNum;
+
+    private AtomicInteger storeDucks;
     private final AtomicInteger userDucks = new AtomicInteger(0);
+
+    @PostConstruct
+    void init() {
+        storeDucks = new AtomicInteger(ducksNum);
+    }
 
     public String buy(int quantity) {
         if (quantity <= 0) {
@@ -18,13 +28,13 @@ public class DuckService {
         int nextStock;
 
         do {
-            currentStock = ducks.get();
+            currentStock = storeDucks.get();
 
             if (currentStock < quantity) {
                 return "Not enough stock";
             }
             nextStock = currentStock - quantity;
-        } while (!ducks.compareAndSet(currentStock, nextStock));
+        } while (!storeDucks.compareAndSet(currentStock, nextStock));
 
         userDucks.addAndGet(quantity);
         return "Success buying " + quantity + " amount of duck! Happy Quacking!";
@@ -47,7 +57,7 @@ public class DuckService {
             nextInventory = currentInventory - quantity;
         } while (!userDucks.compareAndSet(currentInventory, nextInventory));
 
-        ducks.addAndGet(quantity);
+        storeDucks.addAndGet(quantity);
         return "Success selling " + quantity + " amount of duck! don't worry, they are in good hands!";
     }
 
@@ -56,6 +66,6 @@ public class DuckService {
     }
 
     public int getStoreDucks() {
-        return ducks.get();
+        return storeDucks.get();
     }
 }
