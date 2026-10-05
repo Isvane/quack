@@ -1,5 +1,6 @@
 package com.isvane;
 
+import com.isvane.dto.DuckTransactionResponse;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,9 +20,9 @@ public class DuckService {
         storeDucks = new AtomicInteger(ducksNum);
     }
 
-    public String buy(int quantity) {
+    public DuckTransactionResponse buy(int quantity) {
         if (quantity <= 0) {
-            return "Quantity must be greater than zero!";
+            return DuckTransactionResponse.error("Quantity must be greater than zero!", getStoreDucks(), getStoreDucks());
         }
 
         int currentStock;
@@ -31,18 +32,18 @@ public class DuckService {
             currentStock = storeDucks.get();
 
             if (currentStock < quantity) {
-                return "Not enough stock";
+                return DuckTransactionResponse.error("Not enough stock", getUserDucks(), getStoreDucks());
             }
             nextStock = currentStock - quantity;
         } while (!storeDucks.compareAndSet(currentStock, nextStock));
 
         userDucks.addAndGet(quantity);
-        return "Success buying " + quantity + " amount of duck! Happy Quacking!";
+        return DuckTransactionResponse.ok("Success buying " + quantity + " amount of duck! Happy Quacking!", getUserDucks(), getStoreDucks());
     }
 
-    public String sell(int quantity) {
+    public DuckTransactionResponse sell(int quantity) {
         if (quantity <= 0) {
-            return "Quantity must be greater than zero!";
+            return DuckTransactionResponse.error("Quantity must be greater than zero!", getUserDucks(), getStoreDucks());
         }
 
         int currentInventory;
@@ -52,13 +53,13 @@ public class DuckService {
             currentInventory = userDucks.get();
 
             if (currentInventory < quantity) {
-                return "You don't have enough ducks to sell!";
+                return DuckTransactionResponse.error("You don't have enough ducks to sell!", getUserDucks(), getStoreDucks());
             }
             nextInventory = currentInventory - quantity;
         } while (!userDucks.compareAndSet(currentInventory, nextInventory));
 
         storeDucks.addAndGet(quantity);
-        return "Success selling " + quantity + " amount of duck! don't worry, they are in good hands!";
+        return DuckTransactionResponse.ok("Success selling " + quantity + " amount of duck! don't worry, they are in good hands!", getUserDucks(), getStoreDucks());
     }
 
     public int getUserDucks() {
