@@ -1,72 +1,89 @@
 package com.isvane;
 
 import com.isvane.dto.DuckTransactionResponse;
-import jakarta.annotation.PostConstruct;
+import com.isvane.entity.DuckInventory;
+import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
-import java.util.concurrent.atomic.AtomicInteger;
+import jakarta.enterprise.event.Observes;
+import jakarta.persistence.LockModeType;
+import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class DuckService {
 
-    @ConfigProperty(name = "ducks.number")
+    @ConfigProperty(name = "ducks.number", defaultValue = "100")
     int ducksNum;
 
-    private AtomicInteger storeDucks;
-    private final AtomicInteger userDucks = new AtomicInteger(0);
-
-    @PostConstruct
-    void init() {
-        storeDucks = new AtomicInteger(ducksNum);
+    @Transactional
+    void onStart(@Observes StartupEvent ev) {
+        if (DuckInventory.count() == 0) {
+            DuckInventory inventory = new DuckInventory();
+            inventory.storeDucks = ducksNum;
+            inventory.userDucks = 0;
+            inventory.persist();
+        }
     }
 
+    private DuckInventory getLockedInventory() {
+        return DuckInventory.<DuckInventory>findAll().withLock(LockModeType.PESSIMISTIC_WRITE).firstResult();
+    }
+
+    private DuckInventory getReadOnlyInventory() {
+        return DuckInventory.<DuckInventory>findAll().firstResult();
+    }
+
+    @Transactional
     public DuckTransactionResponse buy(int quantity) {
+        DuckInventory inventory = getLockedInventory();
+
         if (quantity <= 0) {
-            return DuckTransactionResponse.error("Quantity must be greater than zero!", getStoreDucks(), getStoreDucks());
+            return DuckTransactionResponse.error("Quantity must be greater than zero!", inventory.userDucks, inventory.storeDucks);
         }
 
-        int currentStock;
-        int nextStock;
+        if (inventory.storeDucks < quantity) {
+            return DuckTransactionResponse.error(
+                "Not enough stock",
+                inventory.userDucks,
+                inventory.storeDucks
+            );
+        }
 
-        do {
-            currentStock = storeDucks.get();
+        inventory.storeDucks -= quantity;
+        inventory.userDucks += quantity;
 
-            if (currentStock < quantity) {
-                return DuckTransactionResponse.error("Not enough stock", getUserDucks(), getStoreDucks());
-            }
-            nextStock = currentStock - quantity;
-        } while (!storeDucks.compareAndSet(currentStock, nextStock));
-
-        userDucks.addAndGet(quantity);
-        return DuckTransactionResponse.ok("Success buying " + quantity + " amount of duck! Happy Quacking!", getUserDucks(), getStoreDucks());
+        return DuckTransactionResponse.ok("Success buying " + quantity + " amount of duck! Happy Quacking!", inventory.userDucks, inventory.storeDucks);
     }
 
+    @Transactional
     public DuckTransactionResponse sell(int quantity) {
+        DuckInventory inventory = getLockedInventory();
+
         if (quantity <= 0) {
-            return DuckTransactionResponse.error("Quantity must be greater than zero!", getUserDucks(), getStoreDucks());
+            return DuckTransactionResponse.error("Quantity must be greater than zero!", inventory.userDucks, inventory.storeDucks);
         }
 
-        int currentInventory;
-        int nextInventory;
+        if (inventory.storeDucks < quantity) {
+            return DuckTransactionResponse.error(
+                "Not enough stock",
+                inventory.userDucks,
+                inventory.storeDucks
+            );
+        }
 
-        do {
-            currentInventory = userDucks.get();
+        inventory.storeDucks += quantity;
+        inventory.userDucks -= quantity;
 
-            if (currentInventory < quantity) {
-                return DuckTransactionResponse.error("You don't have enough ducks to sell!", getUserDucks(), getStoreDucks());
-            }
-            nextInventory = currentInventory - quantity;
-        } while (!userDucks.compareAndSet(currentInventory, nextInventory));
-
-        storeDucks.addAndGet(quantity);
-        return DuckTransactionResponse.ok("Success selling " + quantity + " amount of duck! don't worry, they are in good hands!", getUserDucks(), getStoreDucks());
+        return DuckTransactionResponse.ok("Success selling " + quantity + " amount of duck! don't worry, they are in good hands!", inventory.userDucks, inventory.storeDucks);
     }
 
     public int getUserDucks() {
-        return userDucks.get();
+        DuckInventory inventory = getReadOnlyInventory();
+        return inventory != null ? inventory.userDucks : 0;
     }
 
     public int getStoreDucks() {
-        return storeDucks.get();
+        DuckInventory inventory = getReadOnlyInventory();
+        return inventory != null ? inventory.storeDucks : 0;
     }
 }
