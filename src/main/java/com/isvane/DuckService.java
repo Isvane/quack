@@ -26,7 +26,9 @@ public class DuckService {
     }
 
     private DuckInventory getLockedInventory() {
-        return DuckInventory.<DuckInventory>findAll().withLock(LockModeType.PESSIMISTIC_WRITE).firstResult();
+        return DuckInventory.<DuckInventory>findAll()
+            .withLock(LockModeType.PESSIMISTIC_WRITE)
+            .firstResult();
     }
 
     private DuckInventory getReadOnlyInventory() {
@@ -37,8 +39,20 @@ public class DuckService {
     public DuckTransactionResponse buy(int quantity) {
         DuckInventory inventory = getLockedInventory();
 
+        if (inventory == null) {
+            return DuckTransactionResponse.error(
+                "Inventory is unavailable!",
+                0,
+                0
+            );
+        }
+
         if (quantity <= 0) {
-            return DuckTransactionResponse.error("Quantity must be greater than zero!", inventory.userDucks, inventory.storeDucks);
+            return DuckTransactionResponse.error(
+                "Quantity must be greater than zero!",
+                inventory.userDucks,
+                inventory.storeDucks
+            );
         }
 
         if (inventory.storeDucks < quantity) {
@@ -52,18 +66,34 @@ public class DuckService {
         inventory.storeDucks -= quantity;
         inventory.userDucks += quantity;
 
-        return DuckTransactionResponse.ok("Success buying " + quantity + " amount of duck! Happy Quacking!", inventory.userDucks, inventory.storeDucks);
+        return DuckTransactionResponse.ok(
+            "Success buying " + quantity + " amount of duck! Happy Quacking!",
+            inventory.userDucks,
+            inventory.storeDucks
+        );
     }
 
     @Transactional
     public DuckTransactionResponse sell(int quantity) {
         DuckInventory inventory = getLockedInventory();
 
-        if (quantity <= 0) {
-            return DuckTransactionResponse.error("Quantity must be greater than zero!", inventory.userDucks, inventory.storeDucks);
+        if (inventory == null) {
+            return DuckTransactionResponse.error(
+                "Inventory is unavailable!",
+                0,
+                0
+            );
         }
 
-        if (inventory.storeDucks < quantity) {
+        if (quantity <= 0) {
+            return DuckTransactionResponse.error(
+                "Quantity must be greater than zero!",
+                inventory.userDucks,
+                inventory.storeDucks
+            );
+        }
+
+        if (inventory.userDucks < quantity) {
             return DuckTransactionResponse.error(
                 "Not enough stock",
                 inventory.userDucks,
@@ -74,7 +104,13 @@ public class DuckService {
         inventory.storeDucks += quantity;
         inventory.userDucks -= quantity;
 
-        return DuckTransactionResponse.ok("Success selling " + quantity + " amount of duck! don't worry, they are in good hands!", inventory.userDucks, inventory.storeDucks);
+        return DuckTransactionResponse.ok(
+            "Success selling " +
+                quantity +
+                " amount of duck! don't worry, they are in good hands!",
+            inventory.userDucks,
+            inventory.storeDucks
+        );
     }
 
     public int getUserDucks() {
