@@ -22,7 +22,7 @@ public class DuckResource {
     @POST
     @Path("/buy")
     public Response buy(@Valid DuckTransactionRequest request) {
-        DuckTransactionResponse result = service.buy(request.quantity());
+        DuckTransactionResponse result = service.buy(request);
         if (!result.success()) {
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(result)
@@ -34,7 +34,7 @@ public class DuckResource {
     @POST
     @Path("/sell")
     public Response sellDucks(@Valid DuckTransactionRequest request) {
-        DuckTransactionResponse result = service.sell(request.quantity());
+        DuckTransactionResponse result = service.sell(request);
         if (!result.success()) {
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(result)

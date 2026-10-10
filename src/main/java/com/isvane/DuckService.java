@@ -1,5 +1,6 @@
 package com.isvane;
 
+import com.isvane.dto.DuckTransactionRequest;
 import com.isvane.dto.DuckTransactionResponse;
 import com.isvane.entity.DuckInventory;
 import io.quarkus.runtime.StartupEvent;
@@ -7,6 +8,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
@@ -36,7 +39,7 @@ public class DuckService {
     }
 
     @Transactional
-    public DuckTransactionResponse buy(int quantity) {
+    public DuckTransactionResponse buy(@Valid DuckTransactionRequest request) {
         DuckInventory inventory = getLockedInventory();
 
         if (inventory == null) {
@@ -47,13 +50,7 @@ public class DuckService {
             );
         }
 
-        if (quantity <= 0) {
-            return DuckTransactionResponse.error(
-                "Quantity must be greater than zero!",
-                inventory.userDucks,
-                inventory.storeDucks
-            );
-        }
+        int quantity = request.quantity();
 
         if (inventory.storeDucks < quantity) {
             return DuckTransactionResponse.error(
@@ -74,7 +71,7 @@ public class DuckService {
     }
 
     @Transactional
-    public DuckTransactionResponse sell(int quantity) {
+    public DuckTransactionResponse sell(@Valid DuckTransactionRequest request) {
         DuckInventory inventory = getLockedInventory();
 
         if (inventory == null) {
@@ -85,17 +82,11 @@ public class DuckService {
             );
         }
 
-        if (quantity <= 0) {
-            return DuckTransactionResponse.error(
-                "Quantity must be greater than zero!",
-                inventory.userDucks,
-                inventory.storeDucks
-            );
-        }
+        int quantity = request.quantity();
 
         if (inventory.userDucks < quantity) {
             return DuckTransactionResponse.error(
-                "Not enough stock",
+                "Not enough ducks",
                 inventory.userDucks,
                 inventory.storeDucks
             );
