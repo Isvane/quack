@@ -1,20 +1,21 @@
 # quack
 
-This project is a hands-on learning laboratory for exploring Java and the Quarkus framework by managing thread-safe duck transactions and counting quacks.
+This project is a hands-on learning project for exploring Java and the Quarkus framework by managing thread-safe duck transactions and counting quacks.
 
 ## Overview
 
-- **`DuckService`**: A persistent duck marketplace powered by **Hibernate ORM with Panache** and an H2 database. Uses pessimistic row locking (`PESSIMISTIC_WRITE`) and `@Transactional` boundaries to handle concurrent buys and sells without race conditions.
+- **`DuckService`**: A persistent duck marketplace powered by **Hibernate ORM with Panache** and an PostgreSQL database. Uses pessimistic row locking (`PESSIMISTIC_WRITE`) and `@Transactional` boundaries to handle concurrent buys and sells without race conditions.
 - **`GreetingService`**: A stateful greeter that keeps track of every time someone gets quacked at.
 
 ## Persistence
 - **ORM**: Hibernate ORM with Panache (`DuckInventory` entity).
-- **Storage**: Local file-based H2 database (`./data/duckdb`).
+- **DB**: Using PostgreSQL via Docker.
 - **Seeding**: Automatically seeds stock on first startup (`ducks.number=100`).
 
 ## Quick Start
 
 ```bash
+# Ensure docker is running/started
 ./gradlew quarkusDev
 
 # Check current stock
