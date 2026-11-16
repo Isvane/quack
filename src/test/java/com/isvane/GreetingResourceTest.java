@@ -14,7 +14,16 @@ class GreetingResourceTest {
           .when().get("/hello")
           .then()
              .statusCode(200)
-             .body(is("Hello from Quarkus REST"));
+             .body(is("Quack! Quack! Quack!!"));
+    }
+
+    @Test
+    void testGreetingEndpoint() {
+        given()
+            .when().get("/hello/greeting/Charlene")
+            .then()
+                .statusCode(200)
+                .body(is("Quack " + "Charlene" + " Quack time = " + 1));
     }
 
 }
